@@ -1,4 +1,3 @@
-from dateutil import parser
 import xml.etree.ElementTree as ET
 import requests
 
@@ -32,28 +31,78 @@ def stations():
 
 def station_departures(station):
 
-    response = requests.get(
-        'http://webservices.ns.nl/ns-api-avt?station={}'.format(station),
-        auth=auth
-    )
+    simple_fields = {
+        'ritnummer': 'RitNummer',
+        'vertrektijd': 'VertrekTijd',
+        'vertrekvertraging': 'VertrekVertraging',
+        'vertrekvertragingtekst': 'VertrekVertragingTekst',
+        'eindbestemming': 'EindBestemming',
+        'treinsoort': 'TreinSoort',
+        'routetekst': 'RouteTekst',
+        'vervoerder': 'Vervoerder',
+        'reistip': 'ReisTip',
+    }
 
-    departures_xml = ET.fromstring(response.content)
-    departures = []
+    def get_xml():
+        return requests.get(
+            'http://webservices.ns.nl/ns-api-avt?station={}'.format(station),
+            auth=auth
+        ).content
 
-    for departure_xml in departures_xml:
+    def get_departures():
 
-        try:
-            routetekst = departure_xml.find('RouteTekst').text
-        except:
-            routetekst = None
+        departures = []
 
-        departures.append({
-            'ritnummer': departure_xml.find('RitNummer').text,
-            'vertrektijd': departure_xml.find('VertrekTijd').text,
-            'eindbestemming': departure_xml.find('EindBestemming').text,
-            'treinsoort': departure_xml.find('TreinSoort').text,
-            'routetekst': routetekst,
-            'vervoerder': departure_xml.find('Vervoerder').text,
-        })
+        for departure_xml in ET.fromstring(get_xml()):
 
-    return departures
+            departure = {}
+            set_simple_fields(departure, departure_xml)
+            set_vertrekspoor(departure, departure_xml)
+            set_opmerkingen(departure, departure_xml)
+
+            departures.append(departure)
+
+        return departures
+
+    def set_simple_fields(departure, departure_xml):
+
+        for json_name, xml_name in simple_fields.items():
+
+            element = departure_xml.find(xml_name)
+
+            if element is None:
+                value = None
+            else:
+                value = element.text
+
+            departure[json_name] = value
+
+    def set_vertrekspoor(departure, departure_xml):
+
+        vertrekspoor_el = departure_xml.find('VertrekSpoor')
+
+        if vertrekspoor_el is None:
+            vertrekspoor = None
+            vertrekspoor_gewijzigd = None
+        else:
+            vertrekspoor = vertrekspoor_el.text
+            vertrekspoor_gewijzigd = (
+                True if vertrekspoor_el.attrib['wijziging'] == 'true'
+                else False
+            )
+
+        departure['vertrekspoor'] = vertrekspoor
+        departure['vertrekspoor_gewijzigd'] = vertrekspoor_gewijzigd
+
+    def set_opmerkingen(departure, departure_xml):
+
+        opmerkingen_el = departure_xml.find('Opmerkingen')
+        opmerkingen = []
+
+        if opmerkingen_el is not None:
+            for opmerking in opmerkingen_el.getchildren():
+                opmerkingen.append(opmerking.text.strip())
+
+        departure['opmerkingen'] = opmerkingen
+
+    return get_departures()

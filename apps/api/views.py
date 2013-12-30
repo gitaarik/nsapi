@@ -28,13 +28,21 @@ class StationNames(APIView):
 
     def get(self, request):
 
-        all_stations = api.stations()
         stations = {}
 
-        for station in all_stations:
+        for station in api.stations():
             stations[station['name']] = station['code']
 
         return Response(stations, headers={
+            'Access-Control-Allow-Origin': '*',
+            #'X-Frame-Options': 'ALLOW-FROM *'
+        })
+
+class StationDepartures(APIView):
+
+    def get(self, request, station_code):
+
+        return Response(api.station_departures(station_code), headers={
             'Access-Control-Allow-Origin': '*',
             #'X-Frame-Options': 'ALLOW-FROM *'
         })

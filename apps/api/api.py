@@ -7,6 +7,10 @@ auth = (
     'Kg7KENJ6BaLRbSrpHiDdc-m3tvo1NQbVc93ldNzffO2IQNQVIMMeVA'
 )
 
+class StationNotSupported(Exception):
+    pass
+
+
 def stations():
 
     response = requests.get(
@@ -52,8 +56,12 @@ def station_departures(station):
     def get_departures():
 
         departures = []
+        departures_xml = ET.fromstring(get_xml())
 
-        for departure_xml in ET.fromstring(get_xml()):
+        if departures_xml.tag == 'error':
+            raise StationNotSupported();
+
+        for departure_xml in departures_xml:
 
             departure = {}
             set_simple_fields(departure, departure_xml)

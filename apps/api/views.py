@@ -1,5 +1,6 @@
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from . import api
@@ -42,7 +43,12 @@ class StationDepartures(APIView):
 
     def get(self, request, station_code):
 
-        return Response(api.station_departures(station_code), headers={
+        try:
+            departures = api.station_departures(station_code)
+        except api.StationNotSupported:
+            raise Http404()
+
+        return Response(departures, headers={
             'Access-Control-Allow-Origin': '*',
             #'X-Frame-Options': 'ALLOW-FROM *'
         })

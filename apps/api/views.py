@@ -43,12 +43,18 @@ class StationDepartures(APIView):
 
     def get(self, request, station_code):
 
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            #'X-Frame-Options': 'ALLOW-FROM *'
+        }
+
         try:
             departures = api.station_departures(station_code)
         except api.StationNotSupported:
-            raise Http404()
-
-        return Response(departures, headers={
-            'Access-Control-Allow-Origin': '*',
-            #'X-Frame-Options': 'ALLOW-FROM *'
-        })
+            return Response(
+                { 'error': 'not-found' },
+                status=404,
+                headers=headers
+            )
+        else:
+            return Response(departures, headers=headers)

@@ -1,6 +1,5 @@
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from . import api
@@ -27,6 +26,7 @@ class Stations(APIView):
 
 class StationNames(APIView):
 
+    @method_decorator(cache_page(60 * 60 * 24)) # cache one day
     def get(self, request):
 
         stations = {}
@@ -41,6 +41,7 @@ class StationNames(APIView):
 
 class StationDepartures(APIView):
 
+    @method_decorator(cache_page(60 * 5)) # cache 5 minutes
     def get(self, request, station_code):
 
         headers = {

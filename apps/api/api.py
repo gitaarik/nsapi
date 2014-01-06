@@ -1,3 +1,6 @@
+import re
+from datetime import timedelta
+from dateutil.parser import parse
 import xml.etree.ElementTree as ET
 import requests
 
@@ -36,15 +39,12 @@ def stations():
 def station_departures(station):
 
     simple_fields = {
-        'ritnummer': 'RitNummer',
-        'vertrektijd': 'VertrekTijd',
-        'vertrekvertraging': 'VertrekVertraging',
-        'vertrekvertragingtekst': 'VertrekVertragingTekst',
-        'eindbestemming': 'EindBestemming',
-        'treinsoort': 'TreinSoort',
-        'routetekst': 'RouteTekst',
-        'vervoerder': 'Vervoerder',
-        'reistip': 'ReisTip',
+        'number': 'RitNummer',
+        'destination': 'EindBestemming',
+        'train_type': 'TreinSoort',
+        'route_text': 'RouteTekst',
+        'carrier': 'Vervoerder',
+        'travel_hint': 'ReisTip',
     }
 
     def get_xml():
@@ -65,8 +65,9 @@ def station_departures(station):
 
             departure = {}
             set_simple_fields(departure, departure_xml)
-            set_vertrekspoor(departure, departure_xml)
-            set_opmerkingen(departure, departure_xml)
+            set_platform(departure, departure_xml)
+            set_remarks(departure, departure_xml)
+            set_departure_time_including_delay(departure, departure_xml)
 
             departures.append(departure)
 
@@ -85,32 +86,55 @@ def station_departures(station):
 
             departure[json_name] = value
 
-    def set_vertrekspoor(departure, departure_xml):
+    def set_platform(departure, departure_xml):
 
-        vertrekspoor_el = departure_xml.find('VertrekSpoor')
+        platform_el = departure_xml.find('VertrekSpoor')
 
-        if vertrekspoor_el is None:
-            vertrekspoor = None
-            vertrekspoor_gewijzigd = None
+        if platform_el is None:
+            platform = None
+            platform_changed = None
         else:
-            vertrekspoor = vertrekspoor_el.text
-            vertrekspoor_gewijzigd = (
-                True if vertrekspoor_el.attrib['wijziging'] == 'true'
+            platform = platform_el.text
+            platform_changed = (
+                True if platform_el.attrib['wijziging'] == 'true'
                 else False
             )
 
-        departure['vertrekspoor'] = vertrekspoor
-        departure['vertrekspoor_gewijzigd'] = vertrekspoor_gewijzigd
+        departure['platform'] = platform
+        departure['platform_changed'] = platform_changed
 
-    def set_opmerkingen(departure, departure_xml):
+    def set_remarks(departure, departure_xml):
 
-        opmerkingen_el = departure_xml.find('Opmerkingen')
-        opmerkingen = []
+        remarks_el = departure_xml.find('Opmerkingen')
+        remarks = []
 
-        if opmerkingen_el is not None:
-            for opmerking in opmerkingen_el.getchildren():
-                opmerkingen.append(opmerking.text.strip())
+        if remarks_el is not None:
+            for remark in remarks_el.getchildren():
+                remark.append(remark.text.strip())
 
-        departure['opmerkingen'] = opmerkingen
+        departure['remarks'] = remarks
+
+    def set_departure_time_including_delay(departure, departure_xml):
+
+        departure_time = departure_xml.find('VertrekTijd').text
+
+        try:
+            departure_delay = int(re.sub('[^0-9]', '',
+                departure_xml.find('VertrekVertraging').text))
+        except Exception:
+            departure_delay = 0
+
+        try:
+            departure_time = parse(departure_time)
+        except Exception:
+            departure_time_including_delay = None
+        else:
+            departure_time_including_delay = (
+                departure_time + timedelta(minutes=departure_delay)
+            )
+
+        departure['departure_time'] = departure_time
+        departure['departure_delay'] = departure_delay
+        departure['departure_time_including_delay'] = departure_time_including_delay
 
     return get_departures()

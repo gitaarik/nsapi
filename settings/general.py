@@ -13,22 +13,14 @@ import os
 import sys
 
 
-BASE_DIR = os.path.dirname(__file__)
-sys.path.append(os.path.join(BASE_DIR, 'apps'))
+BASE_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), os.path.pardir
+))
+sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'bfx-u($#b&&qq9a+%v8q8(lu#p)%7nzy)w7)a6-m=vleuoeqrk'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-TEMPLATE_DEBUG = True
-
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['televisionsmostpopularartinstructors.com']
 
 
 # Application definition

@@ -5,6 +5,12 @@ from rest_framework.response import Response
 from . import api
 
 
+access_control_headers = {
+    'Access-Control-Allow-Origin': '*',
+    #'X-Frame-Options': 'ALLOW-FROM *'
+}
+
+
 class Stations(APIView):
 
     @method_decorator(cache_page(60 * 60 * 24)) # cache one day
@@ -18,10 +24,7 @@ class Stations(APIView):
                 del(station['alias'])
                 stations[station['code']] = station
 
-        return Response(stations, headers={
-            'Access-Control-Allow-Origin': '*',
-            #'X-Frame-Options': 'ALLOW-FROM *'
-        })
+        return Response(stations, headers=access_control_headers)
 
 
 class StationNames(APIView):
@@ -34,20 +37,12 @@ class StationNames(APIView):
         for station in api.stations():
             stations[station['name']] = station['code']
 
-        return Response(stations, headers={
-            'Access-Control-Allow-Origin': '*',
-            #'X-Frame-Options': 'ALLOW-FROM *'
-        })
+        return Response(stations, headers=access_control_headers)
 
 class StationDepartures(APIView):
 
     @method_decorator(cache_page(60 * 5)) # cache 5 minutes
     def get(self, request, station_code):
-
-        headers = {
-            'Access-Control-Allow-Origin': '*',
-            #'X-Frame-Options': 'ALLOW-FROM *'
-        }
 
         try:
             departures = api.station_departures(station_code)
@@ -55,7 +50,7 @@ class StationDepartures(APIView):
             return Response(
                 { 'error': 'not-found' },
                 status=404,
-                headers=headers
+                headers=access_control_headers
             )
         else:
-            return Response(departures, headers=headers)
+            return Response(departures, headers=access_control_headers)

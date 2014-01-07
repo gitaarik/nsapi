@@ -41,7 +41,7 @@ class StationNames(APIView):
 
 class StationDepartures(APIView):
 
-    @method_decorator(cache_page(60 * 5)) # cache 5 minutes
+    @method_decorator(cache_page(60)) # cache 1 minute
     def get(self, request, station_code):
 
         try:

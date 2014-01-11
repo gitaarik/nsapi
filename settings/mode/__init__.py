@@ -8,8 +8,10 @@ try:
 except ImportError:
     pass
 else:
-    if 'MODE' in local:
+    try:
         MODE = local.MODE
+    except:
+        pass
 
 if not MODE:
     MODE = 'development'
